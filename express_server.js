@@ -11,6 +11,10 @@ app.get('/', (req, res) => {
   res.send("Hello!");
 });
 
+app.get('/urls.json', (req, res) => {
+  res.json(urlDatabase); // express allows us to just pass in an object and it will automatically JSON.stringify for us
+});
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
