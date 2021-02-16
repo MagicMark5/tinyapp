@@ -1,4 +1,5 @@
 const express = require('express');
+const cookieParser = require('cookie-parser')
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -35,11 +36,17 @@ app.post("/urls", (req, res) => {
 
 app.post('/urls/:shortURL/edit', (req, res) => {
   const newLongURL = `http://${req.body.longURLEdit}`;
-  console.log(req.params.shortURL);
-  console.log("New longURL: " + newLongURL);
-  urlDatabase[req.params.shortURL] = newLongURL;
-  console.log(urlDatabase);
-  res.redirect("/urls");
+  // console.log(req.params.shortURL);
+  // console.log("New longURL: " + newLongURL);
+  if (Object.values(urlDatabase).includes(newLongURL)) {
+    console.log("You already have a short URL for this website URL");
+    res.redirect("/urls/");
+  } else {
+    urlDatabase[req.params.shortURL] = newLongURL;
+    res.redirect("/urls");
+  }
+  //console.log(urlDatabase);
+  
 });
 
 app.post('/urls/:shortURL/delete', (req, res) => {
@@ -49,6 +56,10 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 
 
 //GET Request Hanlding
+
+app.get('/', (req, res) => {
+  res.redirect('/urls'); // express allows us to just pass in an object and it will automatically JSON.stringify for us
+});
 
 app.get('/urls.json', (req, res) => {
   res.json(urlDatabase); // express allows us to just pass in an object and it will automatically JSON.stringify for us
