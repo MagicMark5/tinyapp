@@ -16,7 +16,7 @@ const urlDatabase = {
 function generateRandomString(length) {
   let randomString = "";
   const alphaNums = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  for (let i = 0; i <= length; i++) {
+  for (let i = 0; i < length; i++) {
     let randomIndex = Math.floor(Math.random() * alphaNums.length);
     randomString += alphaNums[randomIndex];
   }
@@ -25,9 +25,10 @@ function generateRandomString(length) {
 
 app.post("/urls", (req, res) => {
   //console.log(req.body);  // Log the POST request body to the console
-  urlDatabase[generateRandomString(6)] = `http://${req.body.longURL}`;
+  let newShortURL = generateRandomString(6);
+  urlDatabase[newShortURL] = `http://${req.body.longURL}`;
   console.log(urlDatabase);
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  res.redirect(`/urls/${newShortURL}`);   // Respond with redirect to new short URL 
 });
 
 app.get('/', (req, res) => {
@@ -48,10 +49,23 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 }); // must be above /urls/:id...routes should be ordered from most to least specific...
 
+app.get("/u/:shortURL", (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL];
+  res.redirect(longURL);
+});
+
 app.get('/urls/:shortURL', (req, res) => {
-  console.log(req.params);
+  // save template variables based on url requested (req.params)
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  res.render("urls_show", templateVars);
+  
+  if (urlDatabase[req.params.shortURL]) {
+    console.log("this is a thing");
+    res.render("urls_show", templateVars);
+  } else {
+    console.log("this is not a thing");
+    res.status(404).render("404.ejs", templateVars);
+  }
+  
 });
 
 app.get("/hello", (req, res) => {
