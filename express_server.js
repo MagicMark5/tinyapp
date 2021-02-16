@@ -31,10 +31,16 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${newShortURL}`);   // Respond with redirect (302) to new short URL -302 means URI of requested resource has changed temporarily
 });
 
+app.post('/urls/:shortURL/delete', (req, res) => {
+  delete urlDatabase[req.params.shortURL];
+  res.redirect('/urls'); // this is another get request
+});
+
+/*
 app.get('/', (req, res) => {
   res.send("Hello!");
 });
-
+*/
 app.get('/urls.json', (req, res) => {
   res.json(urlDatabase); // express allows us to just pass in an object and it will automatically JSON.stringify for us
 });
