@@ -66,9 +66,11 @@ app.get('/urls/:shortURL', (req, res) => {
   
 });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-}); // curl -i http://localhost:8080/hello shows the entire HTTP response string (headers, html content)
+// Catch any other request not caught by the above
+app.get("*", (req, res) => {
+  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  res.status(404).render("404.ejs", templateVars);
+});  // curl -i http://localhost:8080/hello shows the entire HTTP response string (headers, html content)
 
 
 
