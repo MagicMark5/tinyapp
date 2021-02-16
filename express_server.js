@@ -28,7 +28,7 @@ app.post("/urls", (req, res) => {
   let newShortURL = generateRandomString(6);
   urlDatabase[newShortURL] = `http://${req.body.longURL}`;
   console.log(urlDatabase);
-  res.redirect(`/urls/${newShortURL}`);   // Respond with redirect to new short URL 
+  res.redirect(`/urls/${newShortURL}`);   // Respond with redirect (302) to new short URL -302 means URI of requested resource has changed temporarily
 });
 
 app.get('/', (req, res) => {
@@ -59,10 +59,8 @@ app.get('/urls/:shortURL', (req, res) => {
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   
   if (urlDatabase[req.params.shortURL]) {
-    console.log("this is a thing");
     res.render("urls_show", templateVars);
   } else {
-    console.log("this is not a thing");
     res.status(404).render("404.ejs", templateVars);
   }
   
