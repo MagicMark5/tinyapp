@@ -1,6 +1,6 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const { generateRandomString, createUser, findUser } = require('./helpers/userFunctions');
+const { generateRandomString, createUser, findUser, emailExists } = require('./helpers/userFunctions');
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -42,9 +42,30 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
+  const templateVars = { 
+    urls: urlDatabase,
+    user: findUser(req.cookies["user_id"], userDatabase)
+  };
+
+  // If the e-mail or password are empty strings, send back a response with the 400 status code.
+  if (req.body.email === "" || req.body.password === "") {
+    res.status(400).render("400.ejs", templateVars); 
+    return;
+  } 
+
+  /* 
+  // If someone tries to register with an email that is already in the users object, 
+  // send back a response with the 400 status code. 
+  // Checking for an email in the users object is something we'll need to do in other routes as well. 
+  // Consider creating an email lookup helper function to keep your code DRY */
+  if (emailExists(req.body.email, userDatabase)) {
+    res.status(400).render("400.ejs", templateVars); 
+    return;
+  }
+
 
   // add a new user object to the global userDatabase
-  const newUserID = createUser(req.body, userDatabase); 
+  const newUserID = createUser(req.body, userDatabase);  // this value will be error "password" if pass is incorrect
 
   // set a user_id cookie containing the user's newly generated ID.
   if (Object.keys(userDatabase).includes(newUserID)) {
