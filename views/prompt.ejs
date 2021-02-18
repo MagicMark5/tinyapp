@@ -6,43 +6,23 @@
 
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
-  <title>TinyApp: URLs</title>
+  <title>TinyApp: Login</title>
 </head>
 <body>
   <header>
-
+    
     <%- include('partials/_header') %>
     
   </header>
-  <main style="margin: 1em;">
-    <h2>My URLs</h2>
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col">Short URL</th>
-          <th scope="col">Long URL</th>
-          <th scope="col">Edit Long URL</th>
-          <th scope="col">Delete</th>
-        </tr>
-      </thead>
-      <tbody>
-          <% for (const url in urls) { %>
-            <tr>
-              <td><%= url %></td>
-              <td><%= urls[url] %></td>
-              <td>
-                <form method="GET" action="/urls/<%= url %>">
-                  <button class="btn btn-outline-primary">Edit</button></td>
-                </form>
-              <td>
-                <form method="POST" action="/urls/<%= url %>/delete" name="longURL">
-                  <button class="btn btn-outline-danger">Delete</button>
-                </form>
-              </td>
-            </tr>
-          <% } %>
-      </tbody>
-    </table>
+  <main style="width: 50%; margin: 2em auto;">
+    <h3>You must log in or make an account to do that 📚 </h3>
+
+      <div class="form-group" style="width: 500px; margin: 2em auto; text-align: center;">
+        <a class="badge badge-success" href="/login" style="font-size: 1em;">Login</a>
+        <a class="badge badge-primary" href="/register" style="font-size: 1em;">Create New Account</a>
+        <small id="emailHelp" class="form-text text-muted">We promise you won't get spammed with emails if you make an account.</small>
+      </div>
+
   </main>
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>

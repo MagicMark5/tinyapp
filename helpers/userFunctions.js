@@ -17,7 +17,6 @@ const httpAppend = (url) => {
 };
 
 const emailExists = (email, userDB) => {
-  console.log(userDB);
   return (Object.values(userDB).find(userObj => userObj.email === email)) ? true : false;
 };
 
@@ -58,5 +57,18 @@ const findUser = (userID, userDB) => {
   return currentUser;
 };  
 
+const urlsForUser = (id, urlDB) => {
+  // returns the URLs where the userID is equal to the id of the currently logged-in user.
+  const urlsForUser = {};
+  
+  for (const url in urlDB) {
+    if (id === urlDB[url].userID) {
+      urlsForUser[url] = urlDB[url].longURL;
+    }
+  }
 
-module.exports = { generateRandomString, createUser, findUser, emailExists, validateUser, httpAppend };
+  return urlsForUser;
+};
+
+
+module.exports = { generateRandomString, createUser, findUser, emailExists, validateUser, httpAppend, urlsForUser };

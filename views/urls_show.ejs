@@ -25,6 +25,9 @@
             <input type="text" name="longURLEdit" class="form-control" placeholder="http://" aria-label="Edit" aria-describedby="basic-addon1">
             <button class="btn btn-primary" type="submit">Submit</button>
           </div>
+          <% if (alreadyExists) { %>
+          <small> ❌  You already have a short URL for the website URL you entered. Enter a different URL.</small>
+          <% } %>
         </form>
       </div>
     <div class="card-footer text-muted"></div>
