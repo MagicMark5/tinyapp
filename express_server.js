@@ -1,8 +1,14 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const { generateRandomString, createUser, findUser, emailExists } = require('./helpers/userFunctions');
 const app = express();
 const PORT = 8080; // default port 8080
+const { 
+  generateRandomString, 
+  createUser, 
+  findUser, 
+  emailExists, 
+  validateUser 
+} = require('./helpers/userFunctions');
 
 // Set view engine to ejs 
 app.set('view engine', 'ejs');
@@ -53,19 +59,14 @@ app.post("/register", (req, res) => {
     return;
   } 
 
-  /* 
-  // If someone tries to register with an email that is already in the users object, 
-  // send back a response with the 400 status code. 
-  // Checking for an email in the users object is something we'll need to do in other routes as well. 
-  // Consider creating an email lookup helper function to keep your code DRY */
+  // If someone tries to register with an email that is already in the users object, send back a response with the 400 status code. 
   if (emailExists(req.body.email, userDatabase)) {
     res.status(400).render("400.ejs", templateVars); 
     return;
   }
 
-
   // add a new user object to the global userDatabase
-  const newUserID = createUser(req.body, userDatabase);  // this value will be error "password" if pass is incorrect
+  const newUserID = createUser(req.body, userDatabase);  // this value will be error if incorrect
 
   // set a user_id cookie containing the user's newly generated ID.
   if (Object.keys(userDatabase).includes(newUserID)) {
@@ -79,15 +80,35 @@ app.post("/register", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  // set cookie - key=username & value=req.body.username (the input form from _header.ejs)
-  res.cookie("username", req.body.username);
-  res.redirect("/urls/");
+  
+  const templateVars = { 
+    urls: urlDatabase,
+    user: findUser(req.cookies["user_id"], userDatabase)
+  };
+
+  // If a user with that e-mail cannot be found, return a response with a 403 status code.
+  if (!emailExists(req.body.email, userDatabase)) {
+    res.status(403).render("403.ejs", templateVars); 
+    return;
+  } else {
+    // If a user with that e-mail address is located, compare the password given in the form with the existing user's password. 
+    const { user, error } = validateUser(req.body.email, req.body.password, userDatabase);
+    // If it does not match, return a response with a 403 status code.
+    if (error === "password") {
+      res.status(403).render("403.ejs", templateVars); 
+      return;
+    } else {
+      // If both checks pass, set the user_id cookie with the matching user's random ID, then redirect to /urls.
+      res.cookie("user_id", user.id);
+      res.redirect("/urls/");
+    }
+  }
+  
 });
 
 app.post("/logout", (req, res) => {
-  // clear username cookie
-  res.clearCookie("username");
-  res.redirect("/urls/");
+  res.clearCookie("user_id");
+  res.redirect("/login");
 });
 
 app.post('/urls/:shortURL/edit', (req, res) => {
@@ -125,6 +146,14 @@ app.get('/urls', (req, res) => {
     user: findUser(req.cookies["user_id"], userDatabase)
   };
   res.render('urls_index', templateVars);
+});
+
+app.get('/login', (req, res) => {
+  const templateVars = { 
+    urls: urlDatabase,
+    user: findUser(req.cookies["user_id"], userDatabase)
+  };
+  res.render('urls_login', templateVars);
 });
 
 app.get('/register', (req, res) => {

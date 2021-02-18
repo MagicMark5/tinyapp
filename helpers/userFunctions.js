@@ -33,19 +33,15 @@ const validateUser = (email, password, userDB) => {
 }
 
 const createUser = (userBody, userDB) => {
-  const { username, name, icon, email, password } = userBody; // userBody will be req.body when passed in
-  const { user, error } = validateUser(email, password, userDB);
-
-  // only create newID if validateUser returns { user: null, error: "email" }
-  if (error === "email") {
-    const newID = generateRandomString(6);
-    // update the userDatabase
-    userDB[newID] = userBody;
-    return newID;
-  } else {
-    return error;
-  }
+  const { email, password, icon } = userBody; // userBody will be req.body when passed in
   
+  const newID = generateRandomString(6);
+  
+  // Assign newID to new user object as we update the database with form data
+  userDB[newID] = { id: newID, email, password, icon };
+
+  // return newID so cookie can be set
+  return newID; 
 };
 
 const findUser = (userID, userDB) => {
@@ -55,4 +51,4 @@ const findUser = (userID, userDB) => {
 };  
 
 
-module.exports = { generateRandomString, createUser, findUser, emailExists };
+module.exports = { generateRandomString, createUser, findUser, emailExists, validateUser };
