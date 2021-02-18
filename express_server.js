@@ -1,5 +1,5 @@
 const express = require('express');
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bodyParser = require("body-parser");
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
@@ -9,23 +9,32 @@ const {
   generateRandomString, 
   httpAppend,
   createUser, 
-  findUser, 
-  emailExists, 
+  getUserByEmail,
   validateUser, 
   urlsForUser,
 } = require('./helpers/userFunctions');
 
-// Set view engine to ejs 
+// Setting ejs as the template engine
 app.set('view engine', 'ejs');
 
 // Use middleware chain
+
+// parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({extended: true}));
-app.use(cookieParser());
+
+// for encrypting cookies
+app.use(cookieSession({
+  name: 'session',
+  // secret keys 
+  keys: ['7f69fa85-caec-4d9c-acd7-eebdccb368d5', 'f13b4d38-41c4-46d3-9ef6-8836d03cd8eb'],
+}))
 
 const urlDatabase = {
   "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "abc123" },
   "9sm5xK": { longURL: "http://www.google.com", userID: "123qwe" },
 };
+
+const userDatabase = {};
 
 /* TEST CODE for mock database
 
@@ -45,24 +54,24 @@ const userDatabase = {
 };
 */
 
-const userDatabase = {};
 
+//userDatabase[req.session["user_id"]]
 // POST request handling
 
 app.post("/urls", (req, res) => {
   const templateVars = {
-    user: findUser(req.cookies["user_id"], userDatabase), 
+    user: userDatabase[req.session["user_id"]], 
     alreadyExists: false 
   };
   const newLongURL = `${httpAppend(req.body.longURL)}`;
-  const longURLArray = Object.values(urlsForUser(req.cookies["user_id"], urlDatabase));
+  const longURLArray = Object.values(urlsForUser(req.session["user_id"], urlDatabase));
   
   if (longURLArray.includes(newLongURL)) { 
     templateVars.alreadyExists = true;
     res.render("urls_new", templateVars);
   } else {
     let newShortURL = generateRandomString(6);
-    urlDatabase[newShortURL] = { longURL: `${httpAppend(req.body.longURL)}`, userID: req.cookies["user_id"] };
+    urlDatabase[newShortURL] = { longURL: `${httpAppend(req.body.longURL)}`, userID: req.session["user_id"] };
     res.redirect(`/urls/${newShortURL}`);   // Respond with redirect (302) 
   }
   
@@ -71,7 +80,7 @@ app.post("/urls", (req, res) => {
 app.post("/register", (req, res) => {
   const templateVars = { 
     urls: urlDatabase,
-    user: findUser(req.cookies["user_id"], userDatabase)
+    user: userDatabase[req.session["user_id"]]
   };
 
   // If the e-mail or password are empty strings, send back a response with the 400 status code.
@@ -80,18 +89,19 @@ app.post("/register", (req, res) => {
     return;
   } 
 
-  // If someone tries to register with an email that is already in the users object, send back a response with the 400 status code. 
-  if (emailExists(req.body.email, userDatabase)) {
+  // If someone tries to register with an email that is already in the users object, send back a response with the 400 status code.
+  if (getUserByEmail(req.body.email, userDatabase)) {
     res.status(400).render("400.ejs", templateVars); 
     return;
   }
 
-  // add a new user object to the global userDatabase
-  const newUserID = createUser(req.body, userDatabase);  // this value will be error if incorrect
+  // add a new user object with new ID to the global userDatabase
+  const newUserID = createUser(req.body, userDatabase);
 
   // set a user_id cookie containing the user's newly generated ID.
+  // extra check to ensure user_id is in database before assigning cookie
   if (Object.keys(userDatabase).includes(newUserID)) {
-    res.cookie('user_id', newUserID);
+    req.session['user_id'] = newUserID;
     res.redirect("/urls");
   } else {
     console.log(`The id ${newUserID} is not in the userDatabase`);
@@ -104,11 +114,11 @@ app.post("/login", (req, res) => {
   
   const templateVars = { 
     urls: urlDatabase,
-    user: findUser(req.cookies["user_id"], userDatabase)
+    user: userDatabase[req.session["user_id"]]
   };
 
   // If a user with that e-mail cannot be found, return a response with a 403 status code.
-  if (!emailExists(req.body.email, userDatabase)) {
+  if (!getUserByEmail(req.body.email, userDatabase)) {
     res.status(403).render("403.ejs", templateVars); 
     return;
   } else {
@@ -120,7 +130,7 @@ app.post("/login", (req, res) => {
       return;
     } else {
       // If both checks pass, set the user_id cookie with the matching user's random ID, then redirect to /urls.
-      res.cookie("user_id", user.id);
+      req.session["user_id"] = user.id;
       res.redirect("/urls/");
     }
   }
@@ -128,7 +138,7 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id");
+  req.session["user_id"] = null;
   res.redirect("/login");
 });
 
@@ -136,13 +146,13 @@ app.post('/urls/:shortURL/edit', (req, res) => {
   const templateVars = { 
     shortURL: req.params.shortURL, 
     longURL: urlDatabase[req.params.shortURL].longURL,
-    user: findUser(req.cookies["user_id"], userDatabase),
+    user: userDatabase[req.session["user_id"]],
     alreadyExists: false
   };
   // first check if current user id in cookie matches that of the requested shortURL
-  if (req.cookies["user_id"] === urlDatabase[req.params.shortURL].userID) {
+  if (req.session["user_id"] === urlDatabase[req.params.shortURL].userID) {
     const newLongURL = `${httpAppend(req.body.longURLEdit)}`;
-    const longURLArray = Object.values(urlsForUser(req.cookies["user_id"], urlDatabase));
+    const longURLArray = Object.values(urlsForUser(req.session["user_id"], urlDatabase));
     
     if (longURLArray.includes(newLongURL)) { 
       templateVars.alreadyExists = true;
@@ -157,7 +167,7 @@ app.post('/urls/:shortURL/edit', (req, res) => {
 });
 
 app.post('/urls/:shortURL/delete', (req, res) => {
-  if (req.cookies["user_id"] === urlDatabase[req.params.shortURL].userID) {
+  if (req.session["user_id"] === urlDatabase[req.params.shortURL].userID) {
     delete urlDatabase[req.params.shortURL];
   }
   res.redirect('/urls'); // this is another get request
@@ -176,8 +186,8 @@ app.get('/urls.json', (req, res) => {
 
 app.get('/urls', (req, res) => {
   const templateVars = { 
-    urls: urlsForUser(req.cookies["user_id"], urlDatabase), //urlDatabase,
-    user: findUser(req.cookies["user_id"], userDatabase)
+    urls: urlsForUser(req.session["user_id"], urlDatabase), //urlDatabase,
+    user: userDatabase[req.session["user_id"]]
   };
   res.render('urls_index', templateVars);
 });
@@ -185,7 +195,7 @@ app.get('/urls', (req, res) => {
 app.get('/prompt', (req, res) => {
   // renders prompt view to login or register if attempting to access /urls or /urls/new
   const templateVars = { 
-    user: findUser(req.cookies["user_id"], userDatabase)
+    user: userDatabase[req.session["user_id"]]
    };
   res.render('prompt', templateVars);
 });
@@ -193,7 +203,7 @@ app.get('/prompt', (req, res) => {
 app.get('/login', (req, res) => {
   const templateVars = { 
     urls: urlDatabase,
-    user: findUser(req.cookies["user_id"], userDatabase)
+    user: userDatabase[req.session["user_id"]]
   };
   res.render('urls_login', templateVars);
 });
@@ -201,14 +211,14 @@ app.get('/login', (req, res) => {
 app.get('/register', (req, res) => {
   const templateVars = { 
     urls: urlDatabase,
-    user: findUser(req.cookies["user_id"], userDatabase)
+    user: userDatabase[req.session["user_id"]]
   };
   res.render('urls_register', templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
   const templateVars = { 
-    user: findUser(req.cookies["user_id"], userDatabase), 
+    user: userDatabase[req.session["user_id"]], 
     alreadyExists: false
    };
   res.render("urls_new", templateVars);
@@ -224,11 +234,11 @@ app.get('/urls/:shortURL', (req, res) => {
   const templateVars = { 
     shortURL: req.params.shortURL, 
     longURL: urlDatabase[req.params.shortURL].longURL,
-    user: findUser(req.cookies["user_id"], userDatabase), 
+    user: userDatabase[req.session["user_id"]], 
     alreadyExists: false
   };
   
-  if (urlDatabase[req.params.shortURL] && urlDatabase[req.params.shortURL].userID === req.cookies["user_id"]) {
+  if (urlDatabase[req.params.shortURL] && urlDatabase[req.params.shortURL].userID === req.session["user_id"]) {
     res.render("urls_show", templateVars);
   } else {
     res.status(404).render("404.ejs", templateVars);
@@ -241,7 +251,7 @@ app.get("*", (req, res) => {
   const templateVars = { 
     shortURL: req.params.shortURL, 
     longURL: urlDatabase[req.params.shortURL],
-    user: findUser(req.cookies["user_id"], userDatabase)
+    user: userDatabase[req.session["user_id"]]
   };
   res.status(404).render("404.ejs", templateVars);
 });  

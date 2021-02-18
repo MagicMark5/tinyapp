@@ -19,13 +19,13 @@ const httpAppend = (url) => {
   }
 };
 
-const emailExists = (email, userDB) => {
-  return (Object.values(userDB).find(userObj => userObj.email === email)) ? true : false;
+const getUserByEmail = (email, userDB) => {
+  const user = Object.values(userDB).find(userObj => userObj.email === email);
+  return user;
 };
 
 const validateUser = (email, password, userDB) => {
-
-  const currentUser = Object.values(userDB).find(userObj => userObj.email === email);
+  const currentUser = getUserByEmail(email, userDB);
   
   if (currentUser) {
     if (bcrypt.compareSync(password, currentUser.password)) {
@@ -40,7 +40,7 @@ const validateUser = (email, password, userDB) => {
     return { user: null, error: "email" }
   }
 
-}
+};
 
 const createUser = (userBody, userDB) => {
   const { email, password, icon } = userBody; // userBody will be req.body when passed in
@@ -55,17 +55,9 @@ const createUser = (userBody, userDB) => {
     icon 
   };
 
-  console.log(userDB);
-
   // return newID so cookie can be set
   return newID; 
 };
-
-const findUser = (userID, userDB) => {
-  const currentUser = userDB[userID];
-  
-  return currentUser;
-};  
 
 const urlsForUser = (id, urlDB) => {
   // returns the URLs where the userID is equal to the id of the currently logged-in user.
@@ -81,4 +73,4 @@ const urlsForUser = (id, urlDB) => {
 };
 
 
-module.exports = { generateRandomString, createUser, findUser, emailExists, validateUser, httpAppend, urlsForUser };
+module.exports = { generateRandomString, createUser, getUserByEmail, validateUser, httpAppend, urlsForUser };
