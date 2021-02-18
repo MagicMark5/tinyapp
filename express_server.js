@@ -80,17 +80,20 @@ app.post("/urls", (req, res) => {
 app.post("/register", (req, res) => {
   const templateVars = { 
     urls: urlDatabase,
-    user: userDatabase[req.session["user_id"]]
+    user: userDatabase[req.session["user_id"]], 
+    error: "The provided email and/or password do not match our records."
   };
 
   // If the e-mail or password are empty strings, send back a response with the 400 status code.
   if (req.body.email === "" || req.body.password === "") {
+    templateVars.error = "The email address or password input fields were empty.";
     res.status(400).render("400.ejs", templateVars); 
     return;
   } 
 
   // If someone tries to register with an email that is already in the users object, send back a response with the 400 status code.
   if (getUserByEmail(req.body.email, userDatabase)) {
+    templateVars.error = "The provided email address already exists in our records!";
     res.status(400).render("400.ejs", templateVars); 
     return;
   }
@@ -114,11 +117,13 @@ app.post("/login", (req, res) => {
   
   const templateVars = { 
     urls: urlDatabase,
-    user: userDatabase[req.session["user_id"]]
+    user: userDatabase[req.session["user_id"]],
+    error: "An invalid password or email address was provided."
   };
 
   // If a user with that e-mail cannot be found, return a response with a 403 status code.
   if (!getUserByEmail(req.body.email, userDatabase)) {
+    templateVars.error = "We do not have the provided email address in our records. \n Click 'Register' in the top right corner to make an account!";
     res.status(403).render("403.ejs", templateVars); 
     return;
   } else {
@@ -126,6 +131,7 @@ app.post("/login", (req, res) => {
     const { user, error } = validateUser(req.body.email, req.body.password, userDatabase);
     // If it does not match, return a response with a 403 status code.
     if (error === "password") {
+      templateVars.error = "Your password is incorrect!";
       res.status(403).render("403.ejs", templateVars); 
       return;
     } else {
@@ -138,8 +144,9 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  req.session["user_id"] = null;
-  res.redirect("/login");
+  // req.session["user_id"] = null;
+  delete req.session["user_id"];
+  res.redirect("/urls");
 });
 
 app.post('/urls/:shortURL/edit', (req, res) => {
@@ -153,7 +160,7 @@ app.post('/urls/:shortURL/edit', (req, res) => {
   if (req.session["user_id"] === urlDatabase[req.params.shortURL].userID) {
     const newLongURL = `${httpAppend(req.body.longURLEdit)}`;
     const longURLArray = Object.values(urlsForUser(req.session["user_id"], urlDatabase));
-    
+    // then check if requested long url already exists in their list of urls
     if (longURLArray.includes(newLongURL)) { 
       templateVars.alreadyExists = true;
       res.render("urls_show", templateVars);
@@ -177,7 +184,11 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 //GET Request Hanlding
 
 app.get('/', (req, res) => {
-  res.send('HOME PAGE :)'); 
+  if (userDatabase[req.session["user_id"]]) {
+    res.redirect("/urls");
+  } else {
+    res.redirect("/login");
+  }
 });
 
 app.get('/urls.json', (req, res) => {
@@ -216,13 +227,20 @@ app.get('/register', (req, res) => {
   res.render('urls_register', templateVars);
 });
 
+// must be above /urls/:id...routes should be ordered from most to least specific...
 app.get("/urls/new", (req, res) => {
   const templateVars = { 
     user: userDatabase[req.session["user_id"]], 
     alreadyExists: false
    };
-  res.render("urls_new", templateVars);
-}); // must be above /urls/:id...routes should be ordered from most to least specific...
+  
+  if (userDatabase[req.session["user_id"]]) {
+    res.render("urls_new", templateVars);
+  } else {
+    res.redirect("/login");
+  }
+
+}); 
 
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL].longURL;

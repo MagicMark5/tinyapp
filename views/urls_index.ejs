@@ -16,6 +16,7 @@
   </header>
   <main style="margin: 1em;">
     <h2>My URLs</h2>
+    <a class="badge badge-success" href="/urls/new" style="font-size: 1em; margin: 5px 0;">Create a New Short Link 👈</a>
     <table class="table">
       <thead>
         <tr>
@@ -28,7 +29,7 @@
       <tbody>
           <% for (const url in urls) { %>
             <tr>
-              <td><%= url %></td>
+              <td><a href="/u/<%= url %>" target="_blank"><%= url %></a></td>
               <td><%= urls[url] %></td>
               <td>
                 <form method="GET" action="/urls/<%= url %>">
