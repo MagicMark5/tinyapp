@@ -8,6 +8,14 @@ const generateRandomString = (length) => {
   return randomString;
 };
 
+const httpAppend = (url) => {
+  if (url.includes("http://") || url.includes("https://") ) {
+    return url;
+  } else {
+    return `http://${url}`;
+  }
+};
+
 const emailExists = (email, userDB) => {
   console.log(userDB);
   return (Object.values(userDB).find(userObj => userObj.email === email)) ? true : false;
@@ -51,4 +59,4 @@ const findUser = (userID, userDB) => {
 };  
 
 
-module.exports = { generateRandomString, createUser, findUser, emailExists, validateUser };
+module.exports = { generateRandomString, createUser, findUser, emailExists, validateUser, httpAppend };

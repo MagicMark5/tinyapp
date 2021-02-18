@@ -4,6 +4,7 @@ const app = express();
 const PORT = 8080; // default port 8080
 const { 
   generateRandomString, 
+  httpAppend,
   createUser, 
   findUser, 
   emailExists, 
@@ -19,21 +20,21 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "abc123" },
+  "9sm5xK": { longURL: "http://www.google.com", userID: "123qwe" },
 };
 
 const userDatabase = { 
-  "userRandomID": {
-    id: "userRandomID", 
+  "abc123": {
+    id: "abc123", 
     email: "user@example.com", 
-    password: "purple-monkey-dinosaur", 
+    password: "purple", 
     icon: "🐶"
   },
- "user2RandomID": {
-    id: "user2RandomID", 
+ "123qwe": {
+    id: "123qwe", 
     email: "user2@example.com", 
-    password: "dishwasher-funk",
+    password: "pink",
     icon: "🐹"
   }
 };
@@ -41,9 +42,9 @@ const userDatabase = {
 // POST request handling
 
 app.post("/urls", (req, res) => {
-  //console.log(req.body);  // Log the POST request body to the console
   let newShortURL = generateRandomString(6);
-  urlDatabase[newShortURL] = `${req.body.longURL}`;
+  urlDatabase[newShortURL] = { longURL: `${httpAppend(req.body.longURL)}`, userID: req.cookies["user_id"] };
+  // console.log(urlDatabase);
   res.redirect(`/urls/${newShortURL}`);   // Respond with redirect (302) to new short URL -302 means URI of requested resource has changed temporarily
 });
 
@@ -112,13 +113,13 @@ app.post("/logout", (req, res) => {
 });
 
 app.post('/urls/:shortURL/edit', (req, res) => {
-  const newLongURL = `${req.body.longURLEdit}`;
+  const newLongURL = `${httpAppend(req.body.longURLEdit)}`;
   // console.log(req.params.shortURL);
   // console.log("New longURL: " + newLongURL);
-  if (Object.values(urlDatabase).includes(newLongURL)) {
+  if (Object.values(urlDatabase).includes(newLongURL)) { // this check will never pass because we changed our urlDatabase
     console.log("You already have a short URL for this website URL");
   } else {
-    urlDatabase[req.params.shortURL] = newLongURL;
+    urlDatabase[req.params.shortURL].longURL = newLongURL;
   }
   res.redirect("/urls");
 });
@@ -132,7 +133,7 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 //GET Request Hanlding
 
 app.get('/', (req, res) => {
-  res.redirect('/urls'); // express allows us to just pass in an object and it will automatically JSON.stringify for us
+  res.send('HOME PAGE :)'); 
 });
 
 app.get('/urls.json', (req, res) => {
@@ -140,7 +141,6 @@ app.get('/urls.json', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
-  // 'urls' will be our variable to for urlDatabase in our template file urls_index.ejs
   const templateVars = { 
     urls: urlDatabase,
     user: findUser(req.cookies["user_id"], userDatabase)
@@ -172,7 +172,7 @@ app.get("/urls/new", (req, res) => {
 }); // must be above /urls/:id...routes should be ordered from most to least specific...
 
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
 
@@ -180,11 +180,11 @@ app.get('/urls/:shortURL', (req, res) => {
   // save template variables based on url requested (req.params)
   const templateVars = { 
     shortURL: req.params.shortURL, 
-    longURL: urlDatabase[req.params.shortURL],
+    longURL: urlDatabase[req.params.shortURL].longURL,
     user: findUser(req.cookies["user_id"], userDatabase)
   };
   
-  if (urlDatabase[req.params.shortURL]) {
+  if (urlDatabase[req.params.shortURL] && urlDatabase[req.params.shortURL].userID === req.cookies["user_id"]) {
     res.render("urls_show", templateVars);
   } else {
     res.status(404).render("404.ejs", templateVars);
