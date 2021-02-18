@@ -1,5 +1,8 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const bodyParser = require("body-parser");
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 const app = express();
 const PORT = 8080; // default port 8080
 const { 
@@ -9,14 +12,13 @@ const {
   findUser, 
   emailExists, 
   validateUser, 
-  urlsForUser
+  urlsForUser,
 } = require('./helpers/userFunctions');
 
 // Set view engine to ejs 
 app.set('view engine', 'ejs');
 
-
-const bodyParser = require("body-parser");
+// Use middleware chain
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 
@@ -24,6 +26,8 @@ const urlDatabase = {
   "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "abc123" },
   "9sm5xK": { longURL: "http://www.google.com", userID: "123qwe" },
 };
+
+/* TEST CODE for mock database
 
 const userDatabase = { 
   "abc123": {
@@ -39,6 +43,9 @@ const userDatabase = {
     icon: "🐹"
   }
 };
+*/
+
+const userDatabase = {};
 
 // POST request handling
 

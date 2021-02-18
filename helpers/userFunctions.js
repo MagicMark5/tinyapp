@@ -1,3 +1,6 @@
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+
 const generateRandomString = (length) => {
   let randomString = "";
   const alphaNums = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -25,7 +28,7 @@ const validateUser = (email, password, userDB) => {
   const currentUser = Object.values(userDB).find(userObj => userObj.email === email);
   
   if (currentUser) {
-    if (currentUser.password === password) {
+    if (bcrypt.compareSync(password, currentUser.password)) {
       // login success
       return { user: currentUser, error: null }
     } else {
@@ -45,7 +48,14 @@ const createUser = (userBody, userDB) => {
   const newID = generateRandomString(6);
   
   // Assign newID to new user object as we update the database with form data
-  userDB[newID] = { id: newID, email, password, icon };
+  userDB[newID] = { 
+    id: newID, 
+    email, 
+    password: bcrypt.hashSync(password, saltRounds), 
+    icon 
+  };
+
+  console.log(userDB);
 
   // return newID so cookie can be set
   return newID; 
