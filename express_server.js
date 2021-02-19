@@ -117,7 +117,7 @@ app.post("/register", (req, res) => {
     return;
   } 
 
-  // If someone tries to register with an email that is already in the users object, send back a response with the 400 status code.
+  // If registering an email that is already in the userDatabase, send back a response with the 400 status code.
   if (getUserByEmail(req.body.email, userDatabase)) {
     templateVars.error = "The provided email address already exists in our records!";
     res.status(400).render("400.ejs", templateVars); 
