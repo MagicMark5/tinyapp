@@ -121,6 +121,12 @@ app.post("/login", (req, res) => {
     error: "An invalid password or email address was provided."
   };
 
+  if (userDatabase[req.session["user_id"]]) {
+    console.log("User is already logged in");
+    res.redirect('/urls');
+    return;
+  }
+
   // If a user with that e-mail cannot be found, return a response with a 403 status code.
   if (!getUserByEmail(req.body.email, userDatabase)) {
     templateVars.error = "We do not have the provided email address in our records. \n Click 'Register' in the top right corner to make an account!";
@@ -165,6 +171,7 @@ app.post('/urls/:shortURL/edit', (req, res) => {
       templateVars.alreadyExists = true;
       res.render("urls_show", templateVars);
     } else {
+      // successful edit and longURL value is updated
       urlDatabase[req.params.shortURL].longURL = newLongURL;
       res.redirect("/urls");
     }
@@ -216,7 +223,14 @@ app.get('/login', (req, res) => {
     urls: urlDatabase,
     user: userDatabase[req.session["user_id"]]
   };
-  res.render('urls_login', templateVars);
+
+  // if logged in, redirect to /urls
+  if (userDatabase[req.session["user_id"]]) {
+    res.redirect('/urls');
+  } else {
+    res.render('urls_login', templateVars);
+  }
+
 });
 
 app.get('/register', (req, res) => {
@@ -224,7 +238,14 @@ app.get('/register', (req, res) => {
     urls: urlDatabase,
     user: userDatabase[req.session["user_id"]]
   };
-  res.render('urls_register', templateVars);
+
+  // if logged in, redirect to /urls
+  if (userDatabase[req.session["user_id"]]) {
+    res.redirect('/urls');
+  } else {
+    res.render('urls_register', templateVars);
+  }
+  
 });
 
 // must be above /urls/:id...routes should be ordered from most to least specific...
