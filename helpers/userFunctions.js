@@ -65,12 +65,26 @@ const urlsForUser = (id, urlDB) => {
   
   for (const url in urlDB) {
     if (id === urlDB[url].userID) {
-      urlsForUser[url] = urlDB[url].longURL;
+      urlsForUser[url] = { 
+        longURL: urlDB[url].longURL, 
+        date: urlDB[url].dateCreated,
+        hits: urlDB[url].hits,
+        uniqueHits: urlDB[url].uniqueHits
+      };
     }
   }
-
+  
   return urlsForUser;
 };
 
+const getTodaysDate = () => {
+  const ms = new Date();
+  const dd = String(ms.getDate()).padStart(2, '0');
+  const mm = String(ms.getMonth() + 1).padStart(2, '0');
+  const yyyy = ms.getFullYear();
 
-module.exports = { generateRandomString, createUser, getUserByEmail, validateUser, httpAppend, urlsForUser };
+  return `${dd}/${mm}/${yyyy}`;
+};
+
+
+module.exports = { generateRandomString, createUser, getUserByEmail, validateUser, httpAppend, urlsForUser, getTodaysDate };

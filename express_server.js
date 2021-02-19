@@ -1,8 +1,6 @@
 const express = require('express');
 const cookieSession = require('cookie-session');
 const bodyParser = require("body-parser");
-const bcrypt = require('bcrypt');
-const saltRounds = 10;
 const app = express();
 const PORT = 8080; // default port 8080
 const { 
@@ -12,6 +10,7 @@ const {
   getUserByEmail,
   validateUser, 
   urlsForUser,
+  getTodaysDate
 } = require('./helpers/userFunctions');
 
 // Setting ejs as the template engine
@@ -25,37 +24,13 @@ app.use(bodyParser.urlencoded({extended: true}));
 // for encrypting cookies
 app.use(cookieSession({
   name: 'session',
-  // secret keys 
   keys: ['7f69fa85-caec-4d9c-acd7-eebdccb368d5', 'f13b4d38-41c4-46d3-9ef6-8836d03cd8eb'],
 }))
 
-const urlDatabase = {
-  "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "abc123" },
-  "9sm5xK": { longURL: "http://www.google.com", userID: "123qwe" },
-};
-
+const urlDatabase = {};
 const userDatabase = {};
 
-/* TEST CODE for mock database
 
-const userDatabase = { 
-  "abc123": {
-    id: "abc123", 
-    email: "user@example.com", 
-    password: "purple", 
-    icon: "🐶"
-  },
- "123qwe": {
-    id: "123qwe", 
-    email: "user2@example.com", 
-    password: "pink",
-    icon: "🐹"
-  }
-};
-*/
-
-
-//userDatabase[req.session["user_id"]]
 // POST request handling
 
 app.post("/urls", (req, res) => {
@@ -67,11 +42,20 @@ app.post("/urls", (req, res) => {
   const longURLArray = Object.values(urlsForUser(req.session["user_id"], urlDatabase));
   
   if (longURLArray.includes(newLongURL)) { 
+    // url already exists in the users /urls
     templateVars.alreadyExists = true;
     res.render("urls_new", templateVars);
   } else {
+    // successful post to add new URL
     let newShortURL = generateRandomString(6);
-    urlDatabase[newShortURL] = { longURL: `${httpAppend(req.body.longURL)}`, userID: req.session["user_id"] };
+    urlDatabase[newShortURL] = { 
+      longURL: `${httpAppend(req.body.longURL)}`, 
+      userID: req.session["user_id"],
+      dateCreated: getTodaysDate(),
+      hits: 0,
+      uniqueHits: []
+    };
+    
     res.redirect(`/urls/${newShortURL}`);   // Respond with redirect (302) 
   }
   
@@ -121,8 +105,8 @@ app.post("/login", (req, res) => {
     error: "An invalid password or email address was provided."
   };
 
+  // If user is already logged in, redirect and return
   if (userDatabase[req.session["user_id"]]) {
-    console.log("User is already logged in");
     res.redirect('/urls');
     return;
   }
@@ -150,7 +134,6 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  // req.session["user_id"] = null;
   delete req.session["user_id"];
   res.redirect("/urls");
 });
@@ -171,8 +154,11 @@ app.post('/urls/:shortURL/edit', (req, res) => {
       templateVars.alreadyExists = true;
       res.render("urls_show", templateVars);
     } else {
-      // successful edit and longURL value is updated
+      // successful edit and values are updated or reset
       urlDatabase[req.params.shortURL].longURL = newLongURL;
+      urlDatabase[req.params.shortURL].hits = 0;
+      urlDatabase[req.params.shortURL].dateCreated = getTodaysDate();
+      urlDatabase[req.params.shortURL].uniqueHits = [];
       res.redirect("/urls");
     }
   } else {
@@ -198,13 +184,10 @@ app.get('/', (req, res) => {
   }
 });
 
-app.get('/urls.json', (req, res) => {
-  res.json(urlDatabase); // express allows us to just pass in an object and it will automatically JSON.stringify for us
-});
-
 app.get('/urls', (req, res) => {
   const templateVars = { 
-    urls: urlsForUser(req.session["user_id"], urlDatabase), //urlDatabase,
+    // urls will be a user specific object of all of their { shortURL: { longURL, hits, uniqueHits } }
+    urls: urlsForUser(req.session["user_id"], urlDatabase), 
     user: userDatabase[req.session["user_id"]]
   };
   res.render('urls_index', templateVars);
@@ -264,7 +247,17 @@ app.get("/urls/new", (req, res) => {
 }); 
 
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL].longURL;
+  // store requested destination
+  const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[shortURL].longURL;
+  
+  // incremet hit counters 
+  // (only push to unique hits if request is coming from unique IP address)
+  if (!urlDatabase[shortURL].uniqueHits.includes(req.socket.remoteAddress)) {
+    urlDatabase[shortURL].uniqueHits.push(req.socket.remoteAddress);
+  }
+  urlDatabase[shortURL].hits++;
+
   res.redirect(longURL);
 });
 
