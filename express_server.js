@@ -30,8 +30,34 @@ app.use(cookieSession({
 const urlDatabase = {};
 const userDatabase = {};
 
+// ROUTES (GET/POST handling)
 
-// POST request handling
+app.get('/', (req, res) => {
+  if (userDatabase[req.session["user_id"]]) {
+    res.redirect("/urls");
+  } else {
+    res.redirect("/login");
+  }
+});
+
+app.get('/prompt', (req, res) => {
+  // renders prompt view to login/register if attempting to access /urls or /urls/new
+  const templateVars = { 
+    user: userDatabase[req.session["user_id"]]
+   };
+  res.render('prompt', templateVars);
+});
+
+/*  /urls */
+
+app.get('/urls', (req, res) => {
+  const templateVars = { 
+    // urls will be a user specific object of all of their { shortURL: { longURL, hits, uniqueHits } }
+    urls: urlsForUser(req.session["user_id"], urlDatabase), 
+    user: userDatabase[req.session["user_id"]]
+  };
+  res.render('urls_index', templateVars);
+});
 
 app.post("/urls", (req, res) => {
   const templateVars = {
@@ -55,8 +81,24 @@ app.post("/urls", (req, res) => {
       hits: 0,
       uniqueHits: []
     };
-    
-    res.redirect(`/urls/${newShortURL}`);   // Respond with redirect (302) 
+    res.redirect(`/urls/${newShortURL}`);  
+  }
+  
+});
+
+/*  /register  */
+
+app.get('/register', (req, res) => {
+  const templateVars = { 
+    urls: urlDatabase,
+    user: userDatabase[req.session["user_id"]]
+  };
+
+  // if logged in, redirect to /urls
+  if (userDatabase[req.session["user_id"]]) {
+    res.redirect('/urls');
+  } else {
+    res.render('urls_register', templateVars);
   }
   
 });
@@ -68,8 +110,8 @@ app.post("/register", (req, res) => {
     error: "The provided email and/or password do not match our records."
   };
 
-  // If the e-mail or password are empty strings, send back a response with the 400 status code.
-  if (req.body.email === "" || req.body.password === "") {
+  // If post request is made with cURL or the e-mail or password are empty strings, send back a response with the 400 status code.
+  if (Object.keys(req.body).length === 0 || req.body.email === "" || req.body.password === "") {
     templateVars.error = "The email address or password input fields were empty.";
     res.status(400).render("400.ejs", templateVars); 
     return;
@@ -86,18 +128,28 @@ app.post("/register", (req, res) => {
   const newUserID = createUser(req.body, userDatabase);
 
   // set a user_id cookie containing the user's newly generated ID.
-  // extra check to ensure user_id is in database before assigning cookie
-  if (Object.keys(userDatabase).includes(newUserID)) {
-    req.session['user_id'] = newUserID;
-    res.redirect("/urls");
+  req.session['user_id'] = newUserID;
+  res.redirect("/urls");
+});
+
+/*  /login  */
+
+app.get('/login', (req, res) => {
+  const templateVars = { 
+    urls: urlDatabase,
+    user: userDatabase[req.session["user_id"]]
+  };
+
+  // if logged in, redirect to /urls
+  if (userDatabase[req.session["user_id"]]) {
+    res.redirect('/urls');
   } else {
-    console.log(`The id ${newUserID} is not in the userDatabase`);
-    res.send(`The id ${newUserID} is not in the userDatabase`);
+    res.render('urls_login', templateVars);
   }
 
 });
 
-app.post("/login", (req, res) => {
+app.post('/login', (req, res) => {
   
   const templateVars = { 
     urls: urlDatabase,
@@ -133,10 +185,14 @@ app.post("/login", (req, res) => {
   
 });
 
+/*  /logout  */
+
 app.post("/logout", (req, res) => {
   delete req.session["user_id"];
   res.redirect("/urls");
 });
+
+/*   /edit and /delete  */
 
 app.post('/urls/:shortURL/edit', (req, res) => {
   const templateVars = { 
@@ -173,65 +229,9 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   res.redirect('/urls'); // this is another get request
 });
 
+/*   /urls/new  /u/:shortURL  /urls/:shortURL   */
 
-//GET Request Hanlding
-
-app.get('/', (req, res) => {
-  if (userDatabase[req.session["user_id"]]) {
-    res.redirect("/urls");
-  } else {
-    res.redirect("/login");
-  }
-});
-
-app.get('/urls', (req, res) => {
-  const templateVars = { 
-    // urls will be a user specific object of all of their { shortURL: { longURL, hits, uniqueHits } }
-    urls: urlsForUser(req.session["user_id"], urlDatabase), 
-    user: userDatabase[req.session["user_id"]]
-  };
-  res.render('urls_index', templateVars);
-});
-
-app.get('/prompt', (req, res) => {
-  // renders prompt view to login or register if attempting to access /urls or /urls/new
-  const templateVars = { 
-    user: userDatabase[req.session["user_id"]]
-   };
-  res.render('prompt', templateVars);
-});
-
-app.get('/login', (req, res) => {
-  const templateVars = { 
-    urls: urlDatabase,
-    user: userDatabase[req.session["user_id"]]
-  };
-
-  // if logged in, redirect to /urls
-  if (userDatabase[req.session["user_id"]]) {
-    res.redirect('/urls');
-  } else {
-    res.render('urls_login', templateVars);
-  }
-
-});
-
-app.get('/register', (req, res) => {
-  const templateVars = { 
-    urls: urlDatabase,
-    user: userDatabase[req.session["user_id"]]
-  };
-
-  // if logged in, redirect to /urls
-  if (userDatabase[req.session["user_id"]]) {
-    res.redirect('/urls');
-  } else {
-    res.render('urls_register', templateVars);
-  }
-  
-});
-
-// must be above /urls/:id...routes should be ordered from most to least specific...
+// must be before /urls/:id...
 app.get("/urls/new", (req, res) => {
   const templateVars = { 
     user: userDatabase[req.session["user_id"]], 
@@ -243,7 +243,6 @@ app.get("/urls/new", (req, res) => {
   } else {
     res.redirect("/login");
   }
-
 }); 
 
 app.get("/u/:shortURL", (req, res) => {
