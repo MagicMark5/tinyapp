@@ -3,7 +3,7 @@ const cookieSession = require('cookie-session');
 const bodyParser = require("body-parser");
 const methodOverride = require('method-override')
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 8080; 
 const { 
   generateRandomString, 
   httpAppend,
@@ -17,7 +17,7 @@ const {
 // Setting ejs as the template engine
 app.set('view engine', 'ejs');
 
-// override with POST having ?_method=DELETE
+// override with POST having ?_method=DELETE or ?_method=PUT
 app.use(methodOverride('_method'));
 
 // parse application/x-www-form-urlencoded
@@ -197,14 +197,15 @@ app.post("/logout", (req, res) => {
 /*   /edit and /delete  */
 
 app.put('/urls/:shortURL/edit', (req, res) => {
+  const urlObject = urlDatabase[req.params.shortURL];
   const templateVars = { 
     shortURL: req.params.shortURL, 
-    longURL: urlDatabase[req.params.shortURL].longURL,
+    longURL: urlObject.longURL,
     user: userDatabase[req.session["user_id"]],
     alreadyExists: false
   };
   // first check if current user id in cookie matches that of the requested shortURL
-  if (req.session["user_id"] === urlDatabase[req.params.shortURL].userID) {
+  if (req.session["user_id"] === urlObject.userID) {
     const newLongURL = `${httpAppend(req.body.longURLEdit)}`;
     const longURLArray = Object.values(urlsForUser(req.session["user_id"], urlDatabase));
     // then check if requested long url already exists in their list of urls
@@ -213,10 +214,10 @@ app.put('/urls/:shortURL/edit', (req, res) => {
       res.render("urls_show", templateVars);
     } else {
       // successful edit and values are updated or reset
-      urlDatabase[req.params.shortURL].longURL = newLongURL;
-      urlDatabase[req.params.shortURL].hits = 0;
-      urlDatabase[req.params.shortURL].dateCreated = getTodaysDate();
-      urlDatabase[req.params.shortURL].uniqueHits = [];
+      urlObject.longURL = newLongURL;
+      urlObject.hits = 0;
+      urlObject.dateCreated = getTodaysDate();
+      urlObject.uniqueHits = [];
       res.redirect("/urls");
     }
   } else {
@@ -263,15 +264,15 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.get('/urls/:shortURL', (req, res) => {
-  // save template variables based on url requested (req.params)
+  const urlObject = urlDatabase[req.params.shortURL];
   const templateVars = { 
     shortURL: req.params.shortURL, 
-    longURL: urlDatabase[req.params.shortURL].longURL,
+    longURL: urlObject.longURL,
     user: userDatabase[req.session["user_id"]], 
     alreadyExists: false
   };
   
-  if (urlDatabase[req.params.shortURL] && urlDatabase[req.params.shortURL].userID === req.session["user_id"]) {
+  if (urlObject && urlObject.userID === req.session["user_id"]) {
     res.render("urls_show", templateVars);
   } else {
     res.status(404).render("404.ejs", templateVars);
@@ -281,9 +282,10 @@ app.get('/urls/:shortURL', (req, res) => {
 
 // Catch any other request not caught by the above
 app.get("*", (req, res) => {
+  const urlObject = urlDatabase[req.params.shortURL];
   const templateVars = { 
     shortURL: req.params.shortURL, 
-    longURL: urlDatabase[req.params.shortURL],
+    longURL: urlObject,
     user: userDatabase[req.session["user_id"]]
   };
   res.status(404).render("404.ejs", templateVars);
