@@ -42,7 +42,8 @@
                   <button class="btn btn-outline-primary">Edit</button></td>
                 </form>
               <td style="text-align: center;">
-                <form method="POST" action="/urls/<%= url %>/delete" name="longURL">
+                <form method="POST" action="/urls/<%= url %>/delete?_method=DELETE" enctype="application/x-www-form-urlencoded" name="longURL">
+                  <input type="hidden" name="_method" value="DELETE">
                   <button class="btn btn-outline-danger">Delete</button>
                 </form>
               </td>

@@ -1,6 +1,7 @@
 const express = require('express');
 const cookieSession = require('cookie-session');
 const bodyParser = require("body-parser");
+const methodOverride = require('method-override')
 const app = express();
 const PORT = 8080; // default port 8080
 const { 
@@ -16,7 +17,8 @@ const {
 // Setting ejs as the template engine
 app.set('view engine', 'ejs');
 
-// Use middleware chain
+// override with POST having ?_method=DELETE
+app.use(methodOverride('_method'));
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({extended: true}));
@@ -194,7 +196,7 @@ app.post("/logout", (req, res) => {
 
 /*   /edit and /delete  */
 
-app.post('/urls/:shortURL/edit', (req, res) => {
+app.put('/urls/:shortURL/edit', (req, res) => {
   const templateVars = { 
     shortURL: req.params.shortURL, 
     longURL: urlDatabase[req.params.shortURL].longURL,
@@ -222,7 +224,7 @@ app.post('/urls/:shortURL/edit', (req, res) => {
   }
 });
 
-app.post('/urls/:shortURL/delete', (req, res) => {
+app.delete('/urls/:shortURL/delete', (req, res) => {
   if (req.session["user_id"] === urlDatabase[req.params.shortURL].userID) {
     delete urlDatabase[req.params.shortURL];
   }
