@@ -11,6 +11,7 @@ const {
   getUserByEmail,
   validateUser, 
   urlsForUser,
+  getLongURLs,
   getTodaysDate
 } = require('./helpers/userFunctions');
 
@@ -67,8 +68,7 @@ app.post("/urls", (req, res) => {
     alreadyExists: false 
   };
   const newLongURL = `${httpAppend(req.body.longURL)}`;
-  const longURLArray = Object.values(urlsForUser(req.session["user_id"], urlDatabase));
-  
+  const longURLArray = Object.values(getLongURLs(req.session["user_id"], urlDatabase));
   if (longURLArray.includes(newLongURL)) { 
     // url already exists in the users /urls
     templateVars.alreadyExists = true;
@@ -108,21 +108,22 @@ app.get('/register', (req, res) => {
 app.post("/register", (req, res) => {
   const templateVars = { 
     urls: urlDatabase,
-    user: userDatabase[req.session["user_id"]], 
-    error: "The provided email and/or password do not match our records."
+    user: userDatabase[req.session["user_id"]],
+    errorStatusCode: "Error 400: Invalid Request 🤒"
   };
 
   // If post request is made with cURL or the e-mail or password are empty strings, send back a response with the 400 status code.
   if (Object.keys(req.body).length === 0 || req.body.email === "" || req.body.password === "") {
+    
     templateVars.error = "The email address or password input fields were empty.";
-    res.status(400).render("400.ejs", templateVars); 
+    res.status(400).render("error.ejs", templateVars); 
     return;
   } 
 
   // If registering an email that is already in the userDatabase, send back a response with the 400 status code.
   if (getUserByEmail(req.body.email, userDatabase)) {
     templateVars.error = "The provided email address already exists in our records!";
-    res.status(400).render("400.ejs", templateVars); 
+    res.status(400).render("error.ejs", templateVars); 
     return;
   }
 
@@ -156,7 +157,7 @@ app.post('/login', (req, res) => {
   const templateVars = { 
     urls: urlDatabase,
     user: userDatabase[req.session["user_id"]],
-    error: "An invalid password or email address was provided."
+    errorStatusCode: "Error 403: Forbidden Request 😱"
   };
 
   // If user is already logged in, redirect and return
@@ -167,8 +168,8 @@ app.post('/login', (req, res) => {
 
   // If a user with that e-mail cannot be found, return a response with a 403 status code.
   if (!getUserByEmail(req.body.email, userDatabase)) {
-    templateVars.error = "We do not have the provided email address in our records. \n Click 'Register' in the top right corner to make an account!";
-    res.status(403).render("403.ejs", templateVars); 
+    templateVars.error = "We do not have the provided email address in our records";
+    res.status(403).render("error.ejs", templateVars); 
     return;
   } else {
     // If a user with that e-mail address is located, compare the password given in the form with the existing user's password. 
@@ -176,7 +177,7 @@ app.post('/login', (req, res) => {
     // If it does not match, return a response with a 403 status code.
     if (error === "password") {
       templateVars.error = "Your password is incorrect!";
-      res.status(403).render("403.ejs", templateVars); 
+      res.status(403).render("error.ejs", templateVars); 
       return;
     } else {
       // If both checks pass, set the user_id cookie with the matching user's random ID, then redirect to /urls.
@@ -205,9 +206,9 @@ app.put('/urls/:shortURL/edit', (req, res) => {
     alreadyExists: false
   };
   // first check if current user id in cookie matches that of the requested shortURL
-  if (req.session["user_id"] === urlObject.userID) {
+  if (req.session["user_id"] === urlDatabase[req.params.shortURL].userID) {
     const newLongURL = `${httpAppend(req.body.longURLEdit)}`;
-    const longURLArray = Object.values(urlsForUser(req.session["user_id"], urlDatabase));
+    const longURLArray = Object.values(getLongURLs(req.session["user_id"], urlDatabase));
     // then check if requested long url already exists in their list of urls
     if (longURLArray.includes(newLongURL)) { 
       templateVars.alreadyExists = true;
@@ -249,12 +250,10 @@ app.get("/urls/new", (req, res) => {
 }); 
 
 app.get("/u/:shortURL", (req, res) => {
-  // store requested destination
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
   
-  // incremet hit counters 
-  // (only push to unique hits if request is coming from unique IP address)
+  // incremet hit counters (only push to unique hits if request is coming from unique IP address)
   if (!urlDatabase[shortURL].uniqueHits.includes(req.socket.remoteAddress)) {
     urlDatabase[shortURL].uniqueHits.push(req.socket.remoteAddress);
   }
@@ -267,15 +266,17 @@ app.get('/urls/:shortURL', (req, res) => {
   const urlObject = urlDatabase[req.params.shortURL];
   const templateVars = { 
     shortURL: req.params.shortURL, 
-    longURL: urlObject.longURL,
     user: userDatabase[req.session["user_id"]], 
-    alreadyExists: false
+    alreadyExists: false,
+    errorStatusCode: "Error 404: Page Not Found 🔍",
+    error: "The requested URL does not exist."
   };
   
   if (urlObject && urlObject.userID === req.session["user_id"]) {
+    templateVars.longURL = urlObject.longURL;
     res.render("urls_show", templateVars);
   } else {
-    res.status(404).render("404.ejs", templateVars);
+    res.status(404).render("error.ejs", templateVars);
   }
   
 });
@@ -286,9 +287,11 @@ app.get("*", (req, res) => {
   const templateVars = { 
     shortURL: req.params.shortURL, 
     longURL: urlObject,
-    user: userDatabase[req.session["user_id"]]
+    user: userDatabase[req.session["user_id"]],
+    errorStatusCode: "Error 404: Page Not Found 🔍",
+    error: "The requested URL does not exist."
   };
-  res.status(404).render("404.ejs", templateVars);
+  res.status(404).render("error.ejs", templateVars);
 });  
 
 app.listen(PORT, () => {

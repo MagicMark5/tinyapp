@@ -6,7 +6,7 @@
 
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
-  <title>TinyApp: 404 (Not found!)</title>
+  <title>TinyApp: Error</title>
 </head>
 <body>
   <header>
@@ -18,8 +18,8 @@
     <div class="card text-center">
       <div class="card-header"></div>
       <div class="card-body">
-        <h1 class="card-title"></h1>
-        <p class="card-text"></p>
+        <h1 class="card-title"><%= errorStatusCode %></h1>
+        <p class="card-text"><%= error %></p>
       </div>
     <div class="card-footer text-muted"></div>
   </div>

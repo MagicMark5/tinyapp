@@ -60,7 +60,7 @@ const createUser = (userBody, userDB) => {
 };
 
 const urlsForUser = (id, urlDB) => {
-  // returns the URLs where the userID is equal to the id of the currently logged-in user.
+  // returns the URL objects that belong to a given user
   const urlsForUser = {};
   
   for (const url in urlDB) {
@@ -77,6 +77,19 @@ const urlsForUser = (id, urlDB) => {
   return urlsForUser;
 };
 
+const getLongURLs = (id, urlDB) => {
+  // returns an array of all long-urls that belong to a given user
+  const longURLsForUser = [];
+  
+  for (const url in urlDB) {
+    if (id === urlDB[url].userID) {
+      longURLsForUser.push(urlDB[url].longURL); 
+    }
+  }
+  
+  return longURLsForUser;
+};
+
 const getTodaysDate = () => {
   const ms = new Date();
   const dd = String(ms.getDate()).padStart(2, '0');
@@ -87,4 +100,4 @@ const getTodaysDate = () => {
 };
 
 
-module.exports = { generateRandomString, createUser, getUserByEmail, validateUser, httpAppend, urlsForUser, getTodaysDate };
+module.exports = { generateRandomString, createUser, getUserByEmail, validateUser, httpAppend, urlsForUser, getLongURLs, getTodaysDate };
