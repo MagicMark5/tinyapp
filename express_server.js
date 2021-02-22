@@ -5,14 +5,14 @@ const methodOverride = require('method-override')
 const app = express();
 const PORT = 8080; 
 const { 
-  generateRandomString, 
-  httpAppend,
   createUser, 
   getUserByEmail,
   validateUser, 
   urlsForUser,
-  getLongURLs,
-  getTodaysDate
+  getLongURLs, 
+  generateRandomString, 
+  httpAppend, 
+  getTodaysDate 
 } = require('./helpers/userFunctions');
 
 // Setting ejs as the template engine

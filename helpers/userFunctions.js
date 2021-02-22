@@ -1,6 +1,8 @@
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
+// utility functions 
+
 const generateRandomString = (length) => {
   let randomString = "";
   const alphaNums = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -15,9 +17,21 @@ const httpAppend = (url) => {
   if (url.includes("http://") || url.includes("https://") ) {
     return url;
   } else {
-    return `http://${url}`;
+    return `https://${url}`;
   }
 };
+
+const getTodaysDate = () => {
+  const ms = new Date();
+  const dd = String(ms.getDate()).padStart(2, '0');
+  const mm = String(ms.getMonth() + 1).padStart(2, '0');
+  const yyyy = ms.getFullYear();
+
+  return `${dd}/${mm}/${yyyy}`;
+};
+
+
+// User-related functions
 
 const getUserByEmail = (email, userDB) => {
   const user = Object.values(userDB).find(userObj => userObj.email === email);
@@ -90,14 +104,4 @@ const getLongURLs = (id, urlDB) => {
   return longURLsForUser;
 };
 
-const getTodaysDate = () => {
-  const ms = new Date();
-  const dd = String(ms.getDate()).padStart(2, '0');
-  const mm = String(ms.getMonth() + 1).padStart(2, '0');
-  const yyyy = ms.getFullYear();
-
-  return `${dd}/${mm}/${yyyy}`;
-};
-
-
-module.exports = { generateRandomString, createUser, getUserByEmail, validateUser, httpAppend, urlsForUser, getLongURLs, getTodaysDate };
+module.exports = { createUser, getUserByEmail, validateUser, urlsForUser, getLongURLs, getTodaysDate, generateRandomString, httpAppend };
