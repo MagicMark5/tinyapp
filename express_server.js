@@ -43,14 +43,6 @@ app.get('/', (req, res) => {
   }
 });
 
-app.get('/prompt', (req, res) => {
-  // renders prompt view to login/register if attempting to access /urls or /urls/new
-  const templateVars = { 
-    user: userDatabase[req.session["user_id"]]
-   };
-  res.render('prompt', templateVars);
-});
-
 /*  /urls */
 
 app.get('/urls', (req, res) => {
@@ -59,7 +51,12 @@ app.get('/urls', (req, res) => {
     urls: urlsForUser(req.session["user_id"], urlDatabase), 
     user: userDatabase[req.session["user_id"]]
   };
-  res.render('urls_index', templateVars);
+
+  if (userDatabase[req.session["user_id"]]) {
+    res.render("urls_index", templateVars);
+  } else {
+    res.redirect("/login");
+  }
 });
 
 app.post("/urls", (req, res) => {
