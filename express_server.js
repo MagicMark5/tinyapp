@@ -12,7 +12,7 @@ const {
   getLongURLs, 
   generateRandomString, 
   httpAppend, 
-  getTodaysDate 
+  getTodaysDate
 } = require('./helpers/userFunctions');
 
 // Setting ejs as the template engine
@@ -76,9 +76,10 @@ app.post("/urls", (req, res) => {
     urlDatabase[newShortURL] = { 
       longURL: `${httpAppend(req.body.longURL)}`, 
       userID: req.session["user_id"],
-      dateCreated: getTodaysDate(),
+      dateCreated: getTodaysDate(true),
       hits: 0,
-      uniqueHits: []
+      uniqueHits: [],
+      visitorLog: []
     };
     res.redirect(`/urls/${newShortURL}`);  
   }
@@ -200,6 +201,7 @@ app.put('/urls/:shortURL/edit', (req, res) => {
     shortURL: req.params.shortURL, 
     longURL: urlObject.longURL,
     user: userDatabase[req.session["user_id"]],
+    visitorLog: urlObject.visitorLog,
     alreadyExists: false
   };
   // first check if current user id in cookie matches that of the requested shortURL
@@ -209,13 +211,15 @@ app.put('/urls/:shortURL/edit', (req, res) => {
     // then check if requested long url already exists in their list of urls
     if (longURLArray.includes(newLongURL)) { 
       templateVars.alreadyExists = true;
+      templateVars.urls = urlDatabase;
       res.render("urls_show", templateVars);
     } else {
       // successful edit and values are updated or reset
       urlObject.longURL = newLongURL;
       urlObject.hits = 0;
-      urlObject.dateCreated = getTodaysDate();
+      urlObject.dateCreated = getTodaysDate(true);
       urlObject.uniqueHits = [];
+      urlObject.visitorLog = [];
       res.redirect("/urls");
     }
   } else {
@@ -249,12 +253,23 @@ app.get("/urls/new", (req, res) => {
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
+  const visitorLog = urlDatabase[shortURL].visitorLog;
+  const reqUserId = req.session["user_id"];
   
-  // incremet hit counters (only push to unique hits if request is coming from unique IP address)
-  if (!urlDatabase[shortURL].uniqueHits.includes(req.socket.remoteAddress)) {
-    urlDatabase[shortURL].uniqueHits.push(req.socket.remoteAddress);
+  // incremet hit counters (only push to unique hits if request is coming from unique userID)
+  if (!urlDatabase[shortURL].uniqueHits.includes(reqUserId)) {
+    urlDatabase[shortURL].uniqueHits.push(reqUserId);
   }
+
   urlDatabase[shortURL].hits++;
+
+  // Create visitor object with requesting user's id and timestamp, then push to url object
+  const visitorObj = {
+    visitID: generateRandomString(9), 
+    timeStamp: getTodaysDate(false),
+  };
+
+  visitorLog.push(visitorObj);
 
   res.redirect(longURL);
 });
@@ -262,6 +277,7 @@ app.get("/u/:shortURL", (req, res) => {
 app.get('/urls/:shortURL', (req, res) => {
   const urlObject = urlDatabase[req.params.shortURL];
   const templateVars = { 
+    urls: urlDatabase,
     shortURL: req.params.shortURL, 
     user: userDatabase[req.session["user_id"]], 
     alreadyExists: false,
@@ -271,6 +287,7 @@ app.get('/urls/:shortURL', (req, res) => {
   
   if (urlObject && urlObject.userID === req.session["user_id"]) {
     templateVars.longURL = urlObject.longURL;
+    templateVars.visitorLog = urlObject.visitorLog;
     res.render("urls_show", templateVars);
   } else {
     res.status(404).render("error.ejs", templateVars);

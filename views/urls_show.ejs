@@ -13,9 +13,9 @@
     
   </header>
   <div class="card text-center">
-      <div class="card-header"></div>
+      <div class="card-header">TinyURL for...</div>
       <div class="card-body">
-        <h5 class="card-title">TinyURL for: <%= longURL %></h5>
+        <h5 class="card-title"><%= longURL %></h5>
         <p class="card-text">Tiny URL: <a href="/u/<%= shortURL %>" target="_blank"><%= shortURL %></a></p>
         <form method=POST action="/urls/<%= shortURL %>/edit?_method=PUT">
           <div class="input-group mb-3">
@@ -32,6 +32,57 @@
       </div>
     <div class="card-footer text-muted"></div>
   </div>
+
+  <!-- URL Visit Analytics -->
+  <div class="card text-center">
+    <div class="card-header"><strong>Visit Statistics</strong></div>
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Long URL</th>
+            <th scope="col">Visitors</th>
+            <th scope="col">Unique Visitors</th>
+            <th scope="col">Created</th>
+          </tr>
+        </thead>
+        <tbody>
+              <tr>
+                <td><%= urls[shortURL].longURL %></td>
+                <td><%= urls[shortURL].hits %></td>
+                <td><%= urls[shortURL].uniqueHits.length %></td>
+                <td><%= urls[shortURL].dateCreated %></td>
+              </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+    
+    <!-- Visitor Log Table -->
+  <div class="card text-center">
+    <div class="card-header"><strong>Visit Log</strong></div>
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Visit ID</th>
+            <th scope="col">Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (visitorLog.length > 0) { %>
+            <% for (const visit of visitorLog) { %>
+              <tr>
+                <td><%= visit.visitID %></td>
+                <td><%= visit.timeStamp %></td>
+              </tr>
+            <% } %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>

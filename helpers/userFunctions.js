@@ -21,13 +21,18 @@ const httpAppend = (url) => {
   }
 };
 
-const getTodaysDate = () => {
+const getTodaysDate = (formatDate) => {
   const ms = new Date();
+  const sec = ms.getSeconds();
+  const min = ms.getMinutes();
+  const hr = ms.getHours();
   const dd = String(ms.getDate()).padStart(2, '0');
   const mm = String(ms.getMonth() + 1).padStart(2, '0');
   const yyyy = ms.getFullYear();
 
-  return `${dd}/${mm}/${yyyy}`;
+  const utcDate1 = new Date(Date.UTC(yyyy, ms.getMonth(), dd, hr, min, sec));
+
+  return formatDate ? `${dd}/${mm}/${yyyy}` : utcDate1.toUTCString();
 };
 
 
@@ -83,7 +88,8 @@ const urlsForUser = (id, urlDB) => {
         longURL: urlDB[url].longURL, 
         date: urlDB[url].dateCreated,
         hits: urlDB[url].hits,
-        uniqueHits: urlDB[url].uniqueHits
+        uniqueHits: urlDB[url].uniqueHits,
+        visitorLog: urlDB[url].visitorLog
       };
     }
   }
@@ -104,4 +110,13 @@ const getLongURLs = (id, urlDB) => {
   return longURLsForUser;
 };
 
-module.exports = { createUser, getUserByEmail, validateUser, urlsForUser, getLongURLs, getTodaysDate, generateRandomString, httpAppend };
+module.exports = { 
+  createUser, 
+  getUserByEmail, 
+  validateUser, 
+  urlsForUser, 
+  getLongURLs, 
+  getTodaysDate, 
+  generateRandomString, 
+  httpAppend 
+};
